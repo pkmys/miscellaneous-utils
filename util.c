@@ -10,20 +10,40 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "util.h"
 
-void util_dump_hex(const __UINT8_TYPE__* const ptr, __UINT64_TYPE__ len)
+void util_dump_hex(const __UINT8_TYPE__ *const ptr, __UINT64_TYPE__ len)
 {
+    printf("DUMP %p, %lu:", ptr, len);
     do
     {
-        __INT32_TYPE__ i;
+        __INT32_TYPE__ i = 0;
+        __INT32_TYPE__ k = 0;
+        __UINT32_TYPE__ j = 0;
+        char buffer[128] = {0};
         printf("\n");
-        printf("000000 ");
+        j = snprintf(buffer, 18, "      0x000000:  ");
         for (i = 0; i < len; i++)
         {
-            printf("%02x ", (ptr[i]));
+            j += snprintf(buffer+j , 3, "%02x", ptr[i]);
+            if (i & 0x01)
+                j += snprintf(buffer+j , 2, " ");
             if (15 == i % 16)
-                printf("\n%06x: ", (i + 1));
+            {
+                j += snprintf(buffer+j , 2, " ");
+                for (k = (i - 16); k < i; k++)
+                {
+                    if (ptr[k] <= 0x7F)
+                        j += snprintf(buffer+j , 2, "%c", ptr[k]);
+                    else
+                        j += snprintf(buffer+j , 2, ".");
+                }
+                printf("%s", buffer);
+                memset(buffer, 0, 128);
+                j = 0;
+                j += snprintf(buffer+j , 19, "\n      0x%06x:  ", (i + 1));
+            }
         }
         printf("\n");
     } while (0);

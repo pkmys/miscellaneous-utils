@@ -444,5 +444,11 @@ int main(int argc, char **argv) {
     }
     ip_ht_dump(ht);
 
+    char dump[] = "jhfg.l jeghjbhsmvcjhvakhekabalwkigeuguevfmnzmnczlk\
+    zf,mabckjenjmnzcjsgkem,vskjgfvsef,msfbffhskmvkajekejea,n d1111111\
+    11192902020hakkkkkkkkkkkkkkkkkk2222222229930300404";
+
+    util_dump_hex( dump, strlen(dump) );
+
     return 0;
 }
