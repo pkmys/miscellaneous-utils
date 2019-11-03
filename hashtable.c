@@ -285,21 +285,24 @@ void ip_ht_del_list(ip_lookup_t *entry, uint8_t proto, uint16_t port) {
 
         void *it_value = entry->value;
         void *prev = NULL;
-        uint8_t ip_proto = entry->ip_proto;
+        uint8_t ip_proto = 0;
         uint8_t idx = 0;
 
         while(it_value) {
+	    ip_proto = *((uint8_t *)it_value);
             switch(ip_proto) {
                 case 6:
                     if (((tcp_node_t *)it_value)->port == port && ip_proto == proto) {
                         // first node simply delete
                         if (((tcp_node_t *)it_value)->next == NULL && idx == 0) {
                             entry->value = NULL;
+			    entry->ip_proto = 0;
                             free(it_value);
                             return;
                         }
                         if (((tcp_node_t *)it_value)->next != NULL && idx == 0) {
                             entry->value = ((tcp_node_t *)it_value)->next;
+			    entry->ip_proto = ip_proto = *((uint8_t *)(((tcp_node_t *)it_value)->next));
                             free(it_value);
                             return;
                         }
@@ -315,7 +318,6 @@ void ip_ht_del_list(ip_lookup_t *entry, uint8_t proto, uint16_t port) {
                         }
                     }
                     prev = it_value;
-                    ip_proto = *((uint8_t *)it_value);
                     it_value = ((tcp_node_t *)it_value)->next;
                     break;
                 case 17:
@@ -323,11 +325,13 @@ void ip_ht_del_list(ip_lookup_t *entry, uint8_t proto, uint16_t port) {
                         // first node simply delete
                         if (((udp_node_t *)it_value)->next == NULL && idx == 0) {
                             entry->value = NULL;
+			    entry->ip_proto = 0;
                             free(it_value);
                             return;
                         }
                         if (((udp_node_t *)it_value)->next != NULL && idx == 0) {
                             entry->value = ((udp_node_t *)it_value)->next;
+			    entry->ip_proto = *((uint8_t *)(((udp_node_t *)it_value)->next));
                             free(it_value);
                             return;
                         }
@@ -343,7 +347,6 @@ void ip_ht_del_list(ip_lookup_t *entry, uint8_t proto, uint16_t port) {
                         }
                     }
                     prev = it_value;
-                    ip_proto = *((uint8_t *)it_value);
                     it_value = ((udp_node_t *)it_value)->next;
                     break;
                 default:
