@@ -119,7 +119,7 @@ void ip_ht_set(ip_ht_t *hash_table, const uint32_t key, void* value) {
     // calculate hash key
     const unsigned hash = long_hash(key);
     // try to look up an entry set
-    printf("IP HASH: hashing @ 0x%08x\n", hash);
+    // printf("IP HASH: hashing @ 0x%08x\n", hash);
     ip_lookup_t *entry = hash_table->entries[hash];
     // no entry means slot empty, insert immediately
     if (!entry) {
@@ -187,14 +187,14 @@ ip_lookup_t *ip_ht_get(ip_ht_t *hash_table, const uint32_t key) {
     const uint32_t hash = long_hash(key);
     // try to find a valid slot
     ip_lookup_t *entry = hash_table->entries[hash];
-    printf("IP HASH: retrieving 0x%p: %d\n", entry, hash);
+    // printf("IP HASH: retrieving 0x%p: %d\n", entry, hash);
     // no slot means no entry
     if (!entry) return NULL;
 
     // walk through each entry in the slot, which could just be a single thing
     while (entry) {
         // return value if found
-        if (entry->key == key) return entry->value;
+        if (entry->key == key) return entry;
         // proceed to next key if available
         entry = entry->next;
     }
@@ -226,7 +226,7 @@ void ip_ht_del(ip_ht_t *hash_table, const uint32_t key) {
 		    free(entry);
 		    return;
 		}
-		printf("IP HASH: Can't delete child exits!\n");
+		//printf("IP HASH: Can't delete child exits!\n");
 		return;
 	    }
 
@@ -238,7 +238,7 @@ void ip_ht_del(ip_ht_t *hash_table, const uint32_t key) {
                     free(entry);
                     return;
                 }
-                printf("IP HASH: Can't delete child exits!\n");
+                //printf("IP HASH: Can't delete child exits!\n");
                 return;
 	    }
 
@@ -250,7 +250,7 @@ void ip_ht_del(ip_ht_t *hash_table, const uint32_t key) {
                     free(entry);
                     return;
                 }
-                printf("IP HASH: Can't delete child exits!\n");
+                //printf("IP HASH: Can't delete child exits!\n");
                 return;
 	    }
 
@@ -262,7 +262,7 @@ void ip_ht_del(ip_ht_t *hash_table, const uint32_t key) {
                     free(entry);
                     return;
                 }
-                printf("IP HASH: Can't delete child exits!\n");
+                //printf("IP HASH: Can't delete child exits!\n");
                 return;
 	    }
 
@@ -278,89 +278,102 @@ void ip_ht_del(ip_ht_t *hash_table, const uint32_t key) {
 }
 
 void ip_ht_del_list(ip_lookup_t *entry, uint8_t proto, uint16_t port) {
-    
-    if(!entry) return;
 
-    if(entry->value) {
+    if(!entry) return;
 
         void *it_value = entry->value;
         void *prev = NULL;
-        uint8_t ip_proto = 0;
-        uint8_t idx = 0;
+        uint8_t ip_proto = entry->ip_proto;
+        int32_t idx = 0;
 
         while(it_value) {
-	    ip_proto = *((uint8_t *)it_value);
             switch(ip_proto) {
                 case 6:
+                    //printf("TCP: idx:%d, next:%p, port:%d, this port:%d, proto:%d\n", idx, ((tcp_node_t *)it_value)->next, port, ((tcp_node_t *)it_value)->port, proto);
                     if (((tcp_node_t *)it_value)->port == port && ip_proto == proto) {
                         // first node simply delete
                         if (((tcp_node_t *)it_value)->next == NULL && idx == 0) {
                             entry->value = NULL;
-			    entry->ip_proto = 0;
+                            entry->ip_proto = 0;
                             free(it_value);
+                            //printf("TCP: case 1 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                         if (((tcp_node_t *)it_value)->next != NULL && idx == 0) {
                             entry->value = ((tcp_node_t *)it_value)->next;
-			    entry->ip_proto = ip_proto = *((uint8_t *)(((tcp_node_t *)it_value)->next));
+                            entry->ip_proto = *((uint8_t *)it_value);
                             free(it_value);
+                            //printf("TCP: case 2 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                         if (((tcp_node_t *)it_value)->next == NULL && idx != 0) {
                             ((tcp_node_t *)prev)->next = NULL;
                             free(it_value);
+                            //printf("TCP: case 3 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                         if (((tcp_node_t *)it_value)->next != NULL && idx != 0) {
                             ((tcp_node_t *)prev)->next = ((tcp_node_t *)it_value)->next;
+			    ((tcp_node_t *)prev)->ip_proto = *((uint8_t *)it_value);
                             free(it_value);
+                            //printf("TCP: case 4 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                     }
                     prev = it_value;
+		    ip_proto = *((uint8_t *)it_value);
                     it_value = ((tcp_node_t *)it_value)->next;
+                    //printf("TCP: goto next node for port %d idx %d\n", port, idx);
                     break;
                 case 17:
+                    //printf("UDP: idx:%d, next:%p, port:%d, this port:%d, proto:%d\n", idx, ((udp_node_t *)it_value)->next, port, ((udp_node_t *)it_value)->port, proto);
                     if (((udp_node_t *)it_value)->port == port && ip_proto == proto) {
                         // first node simply delete
                         if (((udp_node_t *)it_value)->next == NULL && idx == 0) {
                             entry->value = NULL;
-			    entry->ip_proto = 0;
+                            entry->ip_proto = 0;
                             free(it_value);
+                            //printf("UDP: case 1 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                         if (((udp_node_t *)it_value)->next != NULL && idx == 0) {
                             entry->value = ((udp_node_t *)it_value)->next;
-			    entry->ip_proto = *((uint8_t *)(((udp_node_t *)it_value)->next));
+                            entry->ip_proto = *((uint8_t *)it_value);
                             free(it_value);
+                            //printf("UDP: case 2 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                         if (((udp_node_t *)it_value)->next == NULL && idx != 0) {
                             ((udp_node_t *)prev)->next = NULL;
                             free(it_value);
+                            //printf("UDP: case 3 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                         if (((udp_node_t *)it_value)->next != NULL && idx != 0) {
                             ((udp_node_t *)prev)->next = ((udp_node_t *)it_value)->next;
+			    ((udp_node_t *)prev)->ip_proto = *((uint8_t *)it_value);
                             free(it_value);
+                            //printf("UDP: case 3 del node port %d @ idx %d\n", port, idx);
                             return;
                         }
                     }
                     prev = it_value;
+		    ip_proto = *((uint8_t *)it_value);
                     it_value = ((udp_node_t *)it_value)->next;
+                    //printf("UDP: goto next node for port %d idx %d\n", port, idx);
                     break;
                 default:
-                    printf("IP HASH LIST: Unknown Protocol, list corrupted!\n");
+                    //printf("IP HASH LIST: Unknown Protocol, list corrupted!\n");
                     return;
             }
-        idx++;
+        ++idx;
         }
-    }
 }
 
 void ip_ht_dump(ip_ht_t *hash_table) {
 
     struct in_addr addr = {0};
+    printf("DUMP TABLE @ 0x%p:\n", hash_table);
     for (int i = 0; i < TABLE_SIZE; ++i) {
 
         ip_lookup_t *entry = hash_table->entries[i];
@@ -417,12 +430,12 @@ int main(int argc, char **argv) {
     if (ht) {
         for (int i = 0; i < 128; i++) {
     	    udp_node_t *udp = (udp_node_t *)malloc(sizeof(udp_node_t));
-    	    udp->ip_proto = 6;
+    	    udp->ip_proto = 17;
     	    udp->port = 0x77 + (i%15) * 55;
     	    udp->id = util_id_allocate(global_keystore->udp_bit_array);
             ip_ht_set(ht, ip&mask, udp);
             tcp_node_t *tcp = (tcp_node_t *)malloc(sizeof(tcp_node_t));
-            tcp->ip_proto = 17;
+            tcp->ip_proto = 6;
             tcp->port = 0x77 + (i%15) * 55;
 	    tcp->id = util_id_allocate(global_keystore->tcp_bit_array);
             ip_ht_set(ht, ip&mask, tcp);
@@ -435,9 +448,7 @@ int main(int argc, char **argv) {
             int port = 0x77 + (i%15) * 55;
             ip_ht_del_list(ip_ht_get(ht, ip&mask), 6, port);
             ip_ht_del_list(ip_ht_get(ht, ip&mask), 17, port);
-            ip_ht_del_list(ip_ht_get(ht, ip&mask), 6, port);
-            ip_ht_del_list(ip_ht_get(ht, ip&mask), 17, port);
-            ip_ht_del_list(ip_ht_get(ht, ip&mask), 6, port);
+	    ip_ht_del(ht, ip&mask);
 
             ip += (i%2);
         }
@@ -448,7 +459,7 @@ int main(int argc, char **argv) {
     zf,mabckjenjmnzcjsgkem,vskjgfvsef,msfbffhskmvkajekejea,n d1111111\
     11192902020hakkkkkkkkkkkkkkkkkk2222222229930300404";
 
-    util_dump_hex( dump, strlen(dump) );
+    // util_dump_hex( dump, strlen(dump) );
 
     return 0;
 }
