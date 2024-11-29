@@ -79,4 +79,5 @@ int main()
 				printf("invalid input\n");
 		}
 	}
+	return 0;
 }
